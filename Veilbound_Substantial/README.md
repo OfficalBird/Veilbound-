@@ -4,10 +4,6 @@
 
 > Status: active prototype / work in progress. The current art is placeholder pixel art created for the project while the gameplay architecture is developed.
 
-## Why this is more than a tutorial project
-
-The repository is structured as a small game codebase rather than a single-scene demo. Core systems are separated into reusable components, combat is data-driven through attack dictionaries, fighters share a base combat layer, AI uses explicit states and combat decisions, and match flow is managed independently from fighter logic.
-
 ## Current gameplay systems
 
 - Pixel-art `AnimatedSprite2D` character rendering
