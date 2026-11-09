@@ -1,0 +1,114 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://player.gd" id="1_player"]
+[ext_resource type="Script" path="res://enemy.gd" id="2_enemy"]
+[ext_resource type="Texture2D" path="res://art/player/idle.png" id="3_idle"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
+size = Vector2(50, 100)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_attack"]
+size = Vector2(60, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_enemy"]
+size = Vector2(50, 100)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
+size = Vector2(1152, 60)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle0"]
+atlas = ExtResource("3_idle")
+region = Rect2(0, 0, 48, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle1"]
+atlas = ExtResource("3_idle")
+region = Rect2(48, 0, 48, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle2"]
+atlas = ExtResource("3_idle")
+region = Rect2(96, 0, 48, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle3"]
+atlas = ExtResource("3_idle")
+region = Rect2(144, 0, 48, 64)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_player"]
+animations = [{
+"frames": [{"duration": 1.0, "texture": SubResource("AtlasTexture_idle0")}, {"duration": 1.0, "texture": SubResource("AtlasTexture_idle1")}, {"duration": 1.0, "texture": SubResource("AtlasTexture_idle2")}, {"duration": 1.0, "texture": SubResource("AtlasTexture_idle3")}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}]
+
+[node name="Main" type="Node2D"]
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(300, 510)
+collision_layer = 1
+collision_mask = 6
+script = ExtResource("1_player")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource("RectangleShape2D_player")
+
+[node name="AttackHitbox" type="Area2D" parent="Player"]
+collision_layer = 0
+collision_mask = 2
+monitoring = true
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player/AttackHitbox"]
+position = Vector2(55, 0)
+shape = SubResource("RectangleShape2D_attack")
+
+[node name="Visuals" type="Node2D" parent="Player"]
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Player/Visuals"]
+texture_filter = 1
+position = Vector2(0, 18)
+sprite_frames = SubResource("SpriteFrames_player")
+animation = &"idle"
+autoplay = "idle"
+
+[node name="Enemy" type="CharacterBody2D" parent="."]
+position = Vector2(750, 510)
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("2_enemy")
+
+[node name="Polygon2D" type="Polygon2D" parent="Enemy"]
+polygon = PackedVector2Array(-25, -50, 25, -50, 25, 50, -25, 50)
+color = Color(0.85, 0.85, 0.85, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Enemy"]
+shape = SubResource("RectangleShape2D_enemy")
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(576, 590)
+collision_layer = 4
+collision_mask = 3
+
+[node name="Polygon2D" type="Polygon2D" parent="Ground"]
+polygon = PackedVector2Array(-576, -30, 576, -30, 576, 30, -576, 30)
+color = Color(0.82, 0.88, 0.9, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("RectangleShape2D_ground")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="PlayerHealthBar" type="ProgressBar" parent="UI"]
+offset_left = 40.0
+offset_top = 30.0
+offset_right = 440.0
+offset_bottom = 65.0
+value = 100.0
+show_percentage = true
+
+[node name="EnemyHealthBar" type="ProgressBar" parent="UI"]
+offset_left = 712.0
+offset_top = 30.0
+offset_right = 1112.0
+offset_bottom = 65.0
+value = 100.0
+show_percentage = true
