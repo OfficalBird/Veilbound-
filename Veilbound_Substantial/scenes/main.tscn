@@ -1,0 +1,367 @@
+[gd_scene load_steps=21 format=3]
+
+[ext_resource type="Script" path="res://scripts/game.gd" id="1_game"]
+[ext_resource type="Script" path="res://scripts/player.gd" id="2_player"]
+[ext_resource type="Script" path="res://scripts/enemy.gd" id="3_enemy"]
+[ext_resource type="Script" path="res://scripts/hud.gd" id="4_hud"]
+[ext_resource type="Texture2D" path="res://art/player/idle.png" id="5_idle"]
+
+[sub_resource type="RectangleShape2D" id="PlayerBody"]
+size = Vector2(44, 88)
+
+[sub_resource type="RectangleShape2D" id="PlayerAttack"]
+size = Vector2(62, 42)
+
+[sub_resource type="RectangleShape2D" id="EnemyBody"]
+size = Vector2(44, 88)
+
+[sub_resource type="RectangleShape2D" id="EnemyAttack"]
+size = Vector2(62, 42)
+
+[sub_resource type="RectangleShape2D" id="GroundShape"]
+size = Vector2(1152, 70)
+
+[sub_resource type="RectangleShape2D" id="WallShape"]
+size = Vector2(40, 648)
+
+[sub_resource type="AtlasTexture" id="Idle0"]
+atlas = ExtResource("5_idle")
+region = Rect2(0, 0, 48, 64)
+
+[sub_resource type="AtlasTexture" id="Idle1"]
+atlas = ExtResource("5_idle")
+region = Rect2(48, 0, 48, 64)
+
+[sub_resource type="AtlasTexture" id="Idle2"]
+atlas = ExtResource("5_idle")
+region = Rect2(96, 0, 48, 64)
+
+[sub_resource type="AtlasTexture" id="Idle3"]
+atlas = ExtResource("5_idle")
+region = Rect2(144, 0, 48, 64)
+
+[sub_resource type="SpriteFrames" id="FighterFrames"]
+animations = [{
+"frames": [{"duration": 1.0, "texture": SubResource("Idle0")}, {"duration": 1.0, "texture": SubResource("Idle1")}, {"duration": 1.0, "texture": SubResource("Idle2")}, {"duration": 1.0, "texture": SubResource("Idle3")}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}]
+
+[sub_resource type="StyleBoxFlat" id="HealthBack"]
+bg_color = Color(0.08, 0.09, 0.12, 0.92)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="PlayerHealthFill"]
+bg_color = Color(0.22, 0.72, 0.92, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="EnemyHealthFill"]
+bg_color = Color(0.92, 0.28, 0.3, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StaminaFill"]
+bg_color = Color(0.84, 0.72, 0.22, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_game")
+
+[node name="Sky" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 0, 1152, 0, 1152, 648, 0, 648)
+color = Color(0.055, 0.065, 0.095, 1)
+
+[node name="Moon" type="Polygon2D" parent="."]
+position = Vector2(925, 130)
+polygon = PackedVector2Array(-36, 0, -33, -14, -25, -27, -13, -34, 0, -37, 14, -33, 27, -25, 34, -13, 37, 0, 33, 14, 25, 27, 13, 34, 0, 37, -14, 33, -27, 25, -34, 13)
+color = Color(0.76, 0.82, 0.92, 0.75)
+
+[node name="DistantMountains" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 390, 110, 290, 190, 360, 330, 245, 455, 355, 590, 260, 700, 352, 840, 235, 960, 350, 1080, 270, 1152, 335, 1152, 555, 0, 555)
+color = Color(0.10, 0.12, 0.18, 1)
+
+[node name="PlatformGlow" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 548, 1152, 548, 1152, 585, 0, 585)
+color = Color(0.16, 0.24, 0.31, 1)
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(576, 583)
+collision_layer = 4
+collision_mask = 3
+
+[node name="Visual" type="Polygon2D" parent="Ground"]
+polygon = PackedVector2Array(-576, -35, 576, -35, 576, 35, -576, 35)
+color = Color(0.16, 0.17, 0.20, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("GroundShape")
+
+[node name="LeftWall" type="StaticBody2D" parent="."]
+position = Vector2(-18, 324)
+collision_layer = 4
+collision_mask = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftWall"]
+shape = SubResource("WallShape")
+
+[node name="RightWall" type="StaticBody2D" parent="."]
+position = Vector2(1170, 324)
+collision_layer = 4
+collision_mask = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RightWall"]
+shape = SubResource("WallShape")
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(280, 500)
+collision_layer = 1
+collision_mask = 6
+script = ExtResource("2_player")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource("PlayerBody")
+
+[node name="AttackHitbox" type="Area2D" parent="Player"]
+collision_layer = 0
+collision_mask = 2
+monitoring = true
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player/AttackHitbox"]
+position = Vector2(55, 0)
+shape = SubResource("PlayerAttack")
+
+[node name="AttackFX" type="Polygon2D" parent="Player/AttackHitbox"]
+visible = false
+polygon = PackedVector2Array(28, -21, 87, -14, 92, 0, 87, 14, 28, 21, 46, 0)
+color = Color(0.40, 0.78, 1, 0.60)
+
+[node name="Visuals" type="Node2D" parent="Player"]
+
+[node name="Shadow" type="Polygon2D" parent="Player/Visuals"]
+position = Vector2(0, 43)
+polygon = PackedVector2Array(-28, 0, -18, -5, 18, -5, 28, 0, 18, 5, -18, 5)
+color = Color(0, 0, 0, 0.35)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Player/Visuals"]
+texture_filter = 1
+position = Vector2(0, 12)
+scale = Vector2(1.5, 1.5)
+sprite_frames = SubResource("FighterFrames")
+animation = &"idle"
+autoplay = "idle"
+
+[node name="Enemy" type="CharacterBody2D" parent="."]
+position = Vector2(872, 500)
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("3_enemy")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Enemy"]
+shape = SubResource("EnemyBody")
+
+[node name="AttackHitbox" type="Area2D" parent="Enemy"]
+collision_layer = 0
+collision_mask = 1
+monitoring = true
+monitorable = false
+scale = Vector2(-1, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Enemy/AttackHitbox"]
+position = Vector2(55, 0)
+shape = SubResource("EnemyAttack")
+
+[node name="AttackFX" type="Polygon2D" parent="Enemy/AttackHitbox"]
+visible = false
+polygon = PackedVector2Array(28, -21, 87, -14, 92, 0, 87, 14, 28, 21, 46, 0)
+color = Color(1, 0.35, 0.38, 0.60)
+
+[node name="Visuals" type="Node2D" parent="Enemy"]
+scale = Vector2(-1, 1)
+
+[node name="Shadow" type="Polygon2D" parent="Enemy/Visuals"]
+position = Vector2(0, 43)
+polygon = PackedVector2Array(-28, 0, -18, -5, 18, -5, 28, 0, 18, 5, -18, 5)
+color = Color(0, 0, 0, 0.35)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Enemy/Visuals"]
+texture_filter = 1
+position = Vector2(0, 12)
+scale = Vector2(1.5, 1.5)
+modulate = Color(1, 0.58, 0.58, 1)
+sprite_frames = SubResource("FighterFrames")
+animation = &"idle"
+autoplay = "idle"
+
+[node name="UI" type="CanvasLayer" parent="."]
+script = ExtResource("4_hud")
+
+[node name="TopBar" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1152.0
+offset_bottom = 125.0
+
+[node name="PlayerName" type="Label" parent="UI/TopBar"]
+offset_left = 38.0
+offset_top = 12.0
+offset_right = 220.0
+offset_bottom = 34.0
+text = "VEILBOUND"
+
+[node name="EnemyName" type="Label" parent="UI/TopBar"]
+offset_left = 930.0
+offset_top = 12.0
+offset_right = 1112.0
+offset_bottom = 34.0
+text = "RIVAL"
+horizontal_alignment = 2
+
+[node name="PlayerHealth" type="ProgressBar" parent="UI/TopBar"]
+offset_left = 38.0
+offset_top = 36.0
+offset_right = 430.0
+offset_bottom = 64.0
+theme_override_styles/background = SubResource("HealthBack")
+theme_override_styles/fill = SubResource("PlayerHealthFill")
+value = 100.0
+show_percentage = false
+
+[node name="EnemyHealth" type="ProgressBar" parent="UI/TopBar"]
+offset_left = 722.0
+offset_top = 36.0
+offset_right = 1114.0
+offset_bottom = 64.0
+theme_override_styles/background = SubResource("HealthBack")
+theme_override_styles/fill = SubResource("EnemyHealthFill")
+value = 100.0
+show_percentage = false
+
+[node name="PlayerStamina" type="ProgressBar" parent="UI/TopBar"]
+offset_left = 38.0
+offset_top = 70.0
+offset_right = 320.0
+offset_bottom = 82.0
+theme_override_styles/background = SubResource("HealthBack")
+theme_override_styles/fill = SubResource("StaminaFill")
+value = 100.0
+show_percentage = false
+
+[node name="EnemyStamina" type="ProgressBar" parent="UI/TopBar"]
+offset_left = 832.0
+offset_top = 70.0
+offset_right = 1114.0
+offset_bottom = 82.0
+theme_override_styles/background = SubResource("HealthBack")
+theme_override_styles/fill = SubResource("StaminaFill")
+value = 100.0
+show_percentage = false
+
+[node name="TimerLabel" type="Label" parent="UI/TopBar"]
+offset_left = 536.0
+offset_top = 22.0
+offset_right = 616.0
+offset_bottom = 54.0
+theme_override_font_sizes/font_size = 26
+text = "60"
+horizontal_alignment = 1
+
+[node name="RoundLabel" type="Label" parent="UI/TopBar"]
+offset_left = 500.0
+offset_top = 59.0
+offset_right = 652.0
+offset_bottom = 82.0
+text = "ROUND 1"
+horizontal_alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="UI/TopBar"]
+offset_left = 520.0
+offset_top = 87.0
+offset_right = 632.0
+offset_bottom = 112.0
+text = "0  -  0"
+horizontal_alignment = 1
+
+[node name="MessageLabel" type="Label" parent="UI"]
+offset_left = 326.0
+offset_top = 180.0
+offset_right = 826.0
+offset_bottom = 235.0
+theme_override_font_sizes/font_size = 28
+text = ""
+horizontal_alignment = 1
+
+[node name="ComboLabel" type="Label" parent="UI"]
+offset_left = 40.0
+offset_top = 110.0
+offset_right = 250.0
+offset_bottom = 140.0
+theme_override_font_sizes/font_size = 20
+text = ""
+
+[node name="TrainingLabel" type="Label" parent="UI"]
+offset_left = 450.0
+offset_top = 122.0
+offset_right = 702.0
+offset_bottom = 147.0
+text = ""
+horizontal_alignment = 1
+
+[node name="WinsLabel" type="Label" parent="UI"]
+offset_left = 18.0
+offset_top = 606.0
+offset_right = 360.0
+offset_bottom = 632.0
+text = "Career wins: 0   Matches: 0"
+
+[node name="InstructionsLabel" type="Label" parent="UI"]
+offset_left = 392.0
+offset_top = 606.0
+offset_right = 1132.0
+offset_bottom = 632.0
+text = "A/D Move  W Jump  J Combo  K Heavy  L Block/Parry  Shift Dodge  I Veil Burst  T Training  F3 Debug  Esc Pause"
+horizontal_alignment = 2
+
+[node name="DebugLabel" type="Label" parent="UI"]
+visible = false
+offset_left = 18.0
+offset_top = 150.0
+offset_right = 355.0
+offset_bottom = 245.0
+text = "DEBUG"
+
+[node name="PauseOverlay" type="ColorRect" parent="UI"]
+visible = false
+offset_right = 1152.0
+offset_bottom = 648.0
+color = Color(0.02, 0.025, 0.04, 0.82)
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="UI/PauseOverlay"]
+offset_left = 376.0
+offset_top = 244.0
+offset_right = 776.0
+offset_bottom = 301.0
+theme_override_font_sizes/font_size = 34
+text = "VEILBOUND PAUSED"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="UI/PauseOverlay"]
+offset_left = 376.0
+offset_top = 315.0
+offset_right = 776.0
+offset_bottom = 345.0
+text = "Press Esc to continue • R to restart match"
+horizontal_alignment = 1
