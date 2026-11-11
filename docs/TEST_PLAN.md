@@ -46,3 +46,13 @@ Run the headless checks documented in the README before gameplay changes. The fo
 - Native editor visual checks of title, selection, and combat, with keyboard movement and attacks.
 
 Gamepad hardware and macOS/Windows exported binaries require target-device testing.
+
+## Local versus and survival
+
+- Choose each P1 and P2 character combination. Verify P2 arrows do not move P1; verify comma, period, slash, Enter, semicolon, and apostrophe.
+- Connect two controllers and verify device isolation, including stick, D-pad, and attacks. Hardware gamepad checks require real controllers.
+- Verify Options remapping updates P1 in Local Versus and cannot overwrite P2's reserved keys.
+- Win as P2 and confirm the result announces Player 2 without changing solo win records.
+- Win a Survival wave with reduced health and partial meter. Verify +20 HP, carried meter, stronger rival, and next wave number.
+- Lose Survival, verify best completed-shade record persists across restart. Retry and confirm full health, zero meter, wave one.
+- Test all arena choices and verify Eclipse Citadel uses its own image and HUD name.

@@ -1,0 +1,24 @@
+name: Validate game
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  combat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.6.3
+        run: |
+          curl --fail --location --retry 3 https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          sudo install /tmp/godot/Godot_v4.6.3-stable_linux.x86_64 /usr/local/bin/godot
+      - name: Import assets
+        run: godot --headless --path . --editor --import --quit
+      - name: Validate combat and modes
+        run: godot --headless --path . --script res://tests/combat_test.gd
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate move lab
+        working-directory: move-lab
+        run: npm test

@@ -5,6 +5,7 @@ var total_match_wins: int = 0
 var total_matches_played: int = 0
 var arcade_clears: int = 0
 var best_combo: int = 0
+var survival_best: int = 0
 var settings: Dictionary = {"master":0.8,"music":0.45,"sfx":0.8,"shake":true,"flashes":true,"fullscreen":false,"difficulty":1}
 var bindings: Dictionary = {}
 
@@ -29,6 +30,7 @@ func save() -> void:
     config.set_value("profile", "matches", total_matches_played)
     config.set_value("profile", "arcade_clears", arcade_clears)
     config.set_value("profile", "best_combo", best_combo)
+    config.set_value("profile", "survival_best", survival_best)
     for key: String in settings: config.set_value("settings", key, settings[key])
     for key: String in bindings: config.set_value("bindings", key, bindings[key])
     config.save(SAVE_PATH)
@@ -39,6 +41,7 @@ func load_save() -> void:
     total_match_wins = maxi(0, int(config.get_value("profile", "wins", config.get_value("profile", "total_match_wins", 0))))
     total_matches_played = maxi(0, int(config.get_value("profile", "matches", config.get_value("profile", "total_matches_played", 0))))
     arcade_clears = maxi(0, int(config.get_value("profile", "arcade_clears", 0)))
+    survival_best = maxi(0, int(config.get_value("profile", "survival_best", 0)))
     best_combo = maxi(0, int(config.get_value("profile", "best_combo", 0)))
     for key: String in settings:
         var value: Variant = config.get_value("settings", key, settings[key])

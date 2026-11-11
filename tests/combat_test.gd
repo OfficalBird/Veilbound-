@@ -32,7 +32,7 @@ func reset_pair() -> void:
 func _run() -> void:
     await process_frame
     var save_manager: Node = root.get_node("SaveManager")
-    save_snapshot = {"wins":save_manager.total_match_wins,"matches":save_manager.total_matches_played,"clears":save_manager.arcade_clears,"combo":save_manager.best_combo}
+    save_snapshot = {"wins":save_manager.total_match_wins,"matches":save_manager.total_matches_played,"clears":save_manager.arcade_clears,"combo":save_manager.best_combo,"survival":save_manager.survival_best}
     game = load("res://scenes/main.tscn").instantiate()
     root.add_child(game)
     await process_frame
@@ -131,6 +131,73 @@ func _run() -> void:
     game._back()
     game._open_auxiliary("credits")
     check(game.hud.menu_kind=="credits","credits screen builds")
+    game._select_mode("versus")
+    game.selected_hero = 0
+    game.second_hero = 1
+    game._start_match()
+    check(game.player.input_prefix == "p1_" and game.enemy.input_prefix == "p2_", "local players have isolated controls")
+    check(game.player.fighter_id == "kael" and game.enemy.fighter_id == "nyra", "local fighters selected independently")
+    check(is_equal_approx(game.enemy.damage_multiplier,0.94), "local rival receives character balance without AI difficulty bonus")
+    Input.action_press("p2_move_left")
+    check(game.enemy._read_commands(0.0).move == -1.0 and game.player._read_commands(0.0).move == 0.0, "second player movement does not control first player")
+    Input.action_release("p2_move_left")
+    var second_key := InputEventKey.new()
+    second_key.keycode = KEY_LEFT
+    second_key.physical_keycode = KEY_LEFT
+    second_key.pressed = true
+    Input.parse_input_event(second_key)
+    Input.flush_buffered_events()
+    check(game.enemy._read_commands(0.0).move == -1.0 and game.player._read_commands(0.0).move == 0.0, "second player arrow key maps without moving first player")
+    second_key.pressed = false
+    Input.parse_input_event(second_key)
+    Input.flush_buffered_events()
+    var before_matches: int = save_manager.total_matches_played
+    game._process(3.0)
+    game._end_round(-1)
+    game._process(2.0)
+    game._process(3.0)
+    game._end_round(-1)
+    game._process(2.0)
+    check(game.state == "result" and save_manager.total_matches_played == before_matches, "local result does not change solo career")
+    game._select_mode("survival")
+    game._start_match()
+    game._process(3.0)
+    check(game.enemy.max_health == 80 and game.survival_wave == 1, "survival begins at wave one")
+    game.player.health = 45
+    game.player.meter = 68.0
+    game._end_round(1)
+    game._process(2.0)
+    check(game.survival_wave == 2 and game.enemy.max_health == 90, "survival advances and strengthens next shade")
+    check(game.player.health == 65 and game.player.meter == 68.0, "survival heals twenty and carries Veil forward")
+    game._process(3.0)
+    game._end_round(-1)
+    game._process(2.0)
+    check(game.state == "result" and save_manager.survival_best >= 1, "survival defeat saves completed shade record")
+    check(save_manager.total_matches_played == before_matches, "survival does not pollute duel records")
+    game._on_action("restart",null)
+    check(game.survival_wave == 1 and game.player.health == 100 and game.player.meter == 0.0, "survival retry starts fresh")
+    game._process(3.0)
+    game.player.health = 30
+    game._end_round(0,true)
+    game._process(2.0)
+    check(game.survival_wave == 1 and game.player.health == 30, "survival timeout draw repeats wave without healing")
+    game._select_mode("training")
+    game.selected_stage = 2
+    game._start_match()
+    check(game.stage.background.texture == load("res://art/stages/eclipse.jpg"), "eclipse selects distinct arena artwork")
+    var input_bootstrap: Node = root.get_node("InputBootstrap")
+    var pad_devices: Array[int] = []
+    for event: InputEvent in InputMap.action_get_events("p2_light_attack"):
+        if event is InputEventJoypadButton: pad_devices.append(event.device)
+    check(pad_devices == [1], "second controller is restricted to device one")
+    var old_binding: int = int(save_manager.bindings["light_attack"])
+    input_bootstrap.rebind("light_attack",KEY_H,false)
+    var found_remap: bool = false
+    for event: InputEvent in InputMap.action_get_events("p1_light_attack"):
+        if event is InputEventKey and event.physical_keycode == KEY_H: found_remap = true
+    check(found_remap, "rebinding primary controls updates local player one")
+    input_bootstrap.rebind("light_attack",old_binding,false)
+    save_manager.survival_best = int(save_snapshot.survival)
     save_manager.total_match_wins=int(save_snapshot.wins)
     save_manager.total_matches_played=int(save_snapshot.matches)
     save_manager.arcade_clears=int(save_snapshot.clears)

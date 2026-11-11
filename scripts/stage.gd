@@ -1,6 +1,7 @@
 extends Node2D
 
 const BACKDROP = preload("res://art/stages/moonfall.png")
+const ECLIPSE = preload("res://art/stages/eclipse.jpg")
 var theme_index: int = 0
 var age: float = 0.0
 var motes: Array[Dictionary] = []
@@ -24,7 +25,10 @@ func _ready() -> void:
 func set_theme(index: int) -> void:
     theme_index = index
     if background == null: return
-    background.modulate = [Color(0.8,0.9,1.0),Color(1.0,0.75,0.66),Color(0.68,0.58,0.82)][clampi(index,0,2)]
+    background.texture = ECLIPSE if index == 2 else BACKDROP
+    var texture: Texture2D = background.texture
+    background.scale = Vector2(1168.0/float(texture.get_width()),660.0/float(texture.get_height()))
+    background.modulate = [Color(0.8,0.9,1.0),Color(1.0,0.75,0.66),Color(0.9,0.9,1.0)][clampi(index,0,2)]
 
 func add_impact(point: Vector2, color: Color, kind: String, amount: int = 0) -> void:
     impacts.append({"position":point,"color":color,"kind":kind,"amount":amount,"life":0.0,"seed":rng.randf()*TAU})

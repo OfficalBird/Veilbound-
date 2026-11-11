@@ -23,6 +23,10 @@ var mode: String = "duel"
 var state: String = "menu"
 var selected_hero: int = 0
 var selected_stage: int = 0
+var second_hero: int = 1
+var survival_wave: int = 1
+var survival_health: int = 100
+var survival_meter: float = 0.0
 var difficulty: int = 1
 var arcade_index: int = 0
 var current_round: int = 1
@@ -101,22 +105,33 @@ func _spawn_fighters() -> void:
     player.collision_layer = 1
     player.collision_mask = 6
     player.position = PLAYER_SPAWN
+    if mode == "versus": player.input_prefix = "p1_"
     world.add_child(player)
-    enemy = EnemyScript.new()
+    enemy = PlayerScript.new() if mode == "versus" else EnemyScript.new()
     enemy.name = "Enemy"
-    enemy.fighter_id = str(rival["fighter"])
-    enemy.display_name = str(rival["name"])
+    enemy.fighter_id = ("kael" if second_hero == 0 else "nyra") if mode == "versus" else str(rival["fighter"])
+    enemy.display_name = ("PLAYER 2 / KAEL" if second_hero == 0 else "PLAYER 2 / NYRA") if mode == "versus" else ("SHADE %d" % survival_wave if mode == "survival" else str(rival["name"]))
     enemy.max_health = int(rival["health"]) if mode == "arcade" else 100
     enemy.damage_multiplier = float(rival["damage"]) * [0.75,1.0,1.13][difficulty]
     enemy.move_speed = float(rival["speed"]) * [0.85,1.0,1.08][difficulty]
     enemy.costume_tint = rival["color"]
     enemy.accent = Color("d0a6ed")
-    enemy.difficulty = difficulty
+    if mode == "versus":
+        enemy.input_prefix = "p2_"
+        enemy.damage_multiplier = 1.0
+        enemy.move_speed = 300.0
+    else:
+        enemy.difficulty = difficulty
+        enemy.training_behavior = training_behavior if mode == "training" else 2
+    if mode == "survival":
+        enemy.fighter_id = "kael" if survival_wave % 2 == 0 else "nyra"
+        enemy.max_health = 80 + mini(120, (survival_wave - 1) * 10)
+        enemy.damage_multiplier = minf(1.8, 0.8 + survival_wave * 0.07)
+        enemy.move_speed = minf(330.0, 210.0 + survival_wave * 8.0)
     enemy.collision_layer = 2
     enemy.collision_mask = 5
     enemy.position = ENEMY_SPAWN
     enemy.facing = -1
-    enemy.training_behavior = training_behavior if mode == "training" else 2
     world.add_child(enemy)
     player.opponent = enemy
     enemy.opponent = player
@@ -125,6 +140,9 @@ func _spawn_fighters() -> void:
     player.combat_event.connect(_on_combat_event)
     enemy.combat_event.connect(_on_combat_event)
     hud.bind_fighters(player,enemy)
+    hud.set_arena(selected_stage)
+    if mode == "versus": hud.hint_label.text = "P1: A D W / J K L     P2: ARROWS / , . /     ESC PAUSE"
+    if mode == "survival": hud.hint_label.text = "SURVIVAL / WAVE %d   ·   BEST %d   ·   +20 HP PER WIN" % [survival_wave, SaveManager.survival_best]
     hud.training_label.visible = mode == "training"
     if mode == "training": hud.set_training(training_behavior)
 
@@ -141,8 +159,11 @@ func _show_title() -> void:
 func _select_mode(new_mode: String) -> void:
     mode = new_mode
     arcade_index = 0
+    survival_wave = 1
+    survival_health = 100
+    survival_meter = 0.0
     state = "selection"
-    hud.show_select(selected_hero,mode,difficulty,selected_stage)
+    hud.show_select(selected_hero,mode,difficulty,selected_stage,second_hero)
 
 func _start_match() -> void:
     get_tree().paused = false
@@ -166,6 +187,10 @@ func _begin_round() -> void:
         if child is ProjectileScript: child.queue_free()
     player.reset_fighter(PLAYER_SPAWN)
     enemy.reset_fighter(ENEMY_SPAWN)
+    if mode == "survival":
+        player.health = survival_health
+        player.meter = survival_meter
+        enemy.meter = 0.0
     player.combat_enabled = false
     enemy.combat_enabled = false
     player.facing = 1
@@ -184,7 +209,7 @@ func _begin_round() -> void:
         hud.set_message("TRAINING", "Explore. Experiment. Reset freely.")
     else:
         var rival: Dictionary = RIVALS[arcade_index] if mode=="arcade" else RIVALS[1]
-        hud.set_message("ROUND %d" % current_round,str(rival["line"]))
+        hud.set_message("WAVE %d" % survival_wave if mode == "survival" else "ROUND %d" % current_round,"Survive. Recover 20 health after each shade." if mode == "survival" else "Local duel / two blades, one victor." if mode == "versus" else str(rival["line"]))
     AudioManager.play("round")
 
 func _process(delta: float) -> void:
@@ -223,7 +248,19 @@ func _process(delta: float) -> void:
     elif state == "round_end":
         state_timer -= delta
         if state_timer <= 0.0:
-            if player_score >= 2 or enemy_score >= 2:
+            if mode == "survival":
+                if round_winner > 0:
+                    survival_health = mini(player.max_health, player.health + 20)
+                    survival_meter = player.meter
+                    survival_wave += 1
+                    _start_match()
+                elif round_winner == 0:
+                    survival_health = maxi(1, player.health)
+                    survival_meter = player.meter
+                    _start_match()
+                else:
+                    _finish_match()
+            elif player_score >= 2 or enemy_score >= 2:
                 _finish_match()
             else:
                 current_round += 1
@@ -260,6 +297,14 @@ func _finish_match() -> void:
     state = "result"
     var won: bool = player_score > enemy_score
     var cleared: bool = won and mode=="arcade" and arcade_index==2
+    if mode == "survival":
+        SaveManager.survival_best = maxi(SaveManager.survival_best, survival_wave - 1)
+        SaveManager.save()
+        hud.show_survival_result(survival_wave - 1, SaveManager.survival_best)
+        return
+    if mode == "versus":
+        hud.show_local_result(won, "%d  —  %d" % [player_score, enemy_score])
+        return
     SaveManager.record_match(won)
     SaveManager.best_combo = maxi(SaveManager.best_combo,match_best_combo)
     if cleared: SaveManager.arcade_clears += 1
@@ -342,7 +387,7 @@ func _open_auxiliary(screen: String) -> void:
 func _back() -> void:
     remap_action = ""
     if back_screen=="pause": hud.show_pause()
-    elif back_screen=="select": hud.show_select(selected_hero,mode,difficulty,selected_stage)
+    elif back_screen=="select": hud.show_select(selected_hero,mode,difficulty,selected_stage,second_hero)
     else: hud.show_title()
 
 func _on_action(action: String, value: Variant) -> void:
@@ -351,7 +396,7 @@ func _on_action(action: String, value: Variant) -> void:
         "mode": _select_mode(str(value))
         "hero":
             selected_hero = int(value)
-            hud.show_select(selected_hero,mode,difficulty,selected_stage)
+            hud.show_select(selected_hero,mode,difficulty,selected_stage,second_hero)
         "difficulty":
             difficulty = int(value)
             SaveManager.settings["difficulty"] = difficulty
@@ -360,7 +405,15 @@ func _on_action(action: String, value: Variant) -> void:
             selected_stage = int(value)
             stage.set_theme(selected_stage)
         "start": _start_match()
-        "restart": _start_match()
+        "restart":
+            if mode == "survival":
+                survival_wave = 1
+                survival_health = 100
+                survival_meter = 0.0
+            _start_match()
+        "hero2":
+            second_hero = int(value)
+            hud.show_select(selected_hero,mode,difficulty,selected_stage,second_hero)
         "next":
             arcade_index = mini(2,arcade_index+1)
             _start_match()
@@ -383,7 +436,7 @@ func _input(event: InputEvent) -> void:
         if code==KEY_ESCAPE:
             remap_action = ""
             hud.show_options()
-        elif code not in [KEY_R,KEY_T,KEY_F3,KEY_F11,KEY_ENTER,KEY_KP_ENTER] and code != 0:
+        elif code not in [KEY_LEFT,KEY_RIGHT,KEY_UP,KEY_COMMA,KEY_PERIOD,KEY_SLASH,KEY_SEMICOLON,KEY_APOSTROPHE,KEY_R,KEY_T,KEY_F3,KEY_F11,KEY_ENTER,KEY_KP_ENTER] and code != 0:
             var duplicate_action: String = ""
             for action: String in InputBootstrap.DEFAULTS:
                 if action != remap_action and int(SaveManager.bindings.get(action,InputBootstrap.DEFAULTS[action]))==code:
@@ -418,7 +471,7 @@ func _unhandled_input(event: InputEvent) -> void:
         KEY_R:
             if state in ["fight","countdown","round_end","result"] and not get_tree().paused:
                 if mode=="training" and state=="fight": _reset_training()
-                else: _start_match()
+                else: _on_action("restart",null)
         KEY_T:
             if mode=="training" and state=="fight" and not get_tree().paused:
                 training_behavior = (training_behavior+1)%3

@@ -27,8 +27,8 @@ Guard applies 20% chip damage and consumes stamina when attacked from the front.
 
 ## Presentation
 
-Moonfall Sanctuary is a single detailed arena with Moonfall, Ember Dawn, and Eclipse atmosphere options. The two fighters have separate artwork and eight pose cells each. The interface uses teal, violet, and warm gold; particles, trails, hitstop, damage numbers, sound, and optional shake communicate combat state.
+Moonfall Sanctuary has Moonfall and Ember Dawn atmosphere options. Eclipse Citadel uses a separate gothic arena illustration. The two fighters have separate artwork and eight pose cells each. The interface uses teal, violet, and warm gold; particles, trails, hitstop, damage numbers, sound, and optional shake communicate combat state.
 
 ## Scope
 
-This release supports a single human player against AI, keyboard and gamepad input, local settings, and career records. It does not include network play, rollback, a large character roster, or a story campaign outside the three-duel Arcade.
+This release supports solo play against AI and local two-player versus, keyboard and gamepad input, local settings, and career records. Survival scales one rival per wave, carries health and Veil forward, heals 20 HP per win, and stores a best-wave record. It does not include network play, rollback, a large character roster, or a story campaign outside the three-duel Arcade.

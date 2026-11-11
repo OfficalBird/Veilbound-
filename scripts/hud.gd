@@ -154,17 +154,19 @@ func show_title() -> void:
     var first: Button = button("ARCADE  /  THE THREE SEALS",Rect2(88,254,398,49),"mode",null,true,"arcade")
     button("QUICK DUEL",Rect2(88,315,192,43),"mode",null,false,"duel")
     button("TRAINING",Rect2(294,315,192,43),"mode",null,false,"training")
-    button("HOW TO PLAY",Rect2(88,371,192,43),"controls")
-    button("OPTIONS",Rect2(294,371,192,43),"options")
-    button("CREDITS",Rect2(88,427,192,40),"credits")
-    if not OS.has_feature("web"): button("QUIT",Rect2(294,427,192,40),"quit")
+    button("LOCAL VERSUS",Rect2(88,371,192,43),"mode",null,false,"versus")
+    button("SURVIVAL",Rect2(294,371,192,43),"mode",null,false,"survival")
+    button("HOW TO PLAY",Rect2(88,427,192,40),"controls")
+    button("OPTIONS",Rect2(294,427,192,40),"options")
+    button("CREDITS",Rect2(88,478,192,30),"credits")
+    if not OS.has_feature("web"): button("QUIT",Rect2(294,478,192,30),"quit")
     var stats: String = "%d WINS    /    %d DUELS    /    %d ARCADE CLEARS" % [SaveManager.total_match_wins,SaveManager.total_matches_played,SaveManager.arcade_clears]
-    text(stats,Rect2(88,507,620,25),12,GOLD)
+    text(stats,Rect2(88,528,620,25),12,GOLD)
     text("A / D  MOVE     W  JUMP     J / K  STRIKE     L  GUARD",Rect2(88,573,850,24),12,MUTED)
-    text("v0.2  ·  SHERWIN DHALIWAL",Rect2(88,606,700,20),11,Color("6c839c"))
+    text("v0.3  ·  SHERWIN DHALIWAL",Rect2(88,606,700,20),11,Color("6c839c"))
     first.grab_focus()
 
-func show_select(hero: int, mode: String, difficulty: int, stage_index: int) -> void:
+func show_select(hero: int, mode: String, difficulty: int, stage_index: int, second_hero: int = 1) -> void:
     _clear_menu()
     menu_kind = "select"
     combat.hide()
@@ -182,19 +184,30 @@ func show_select(hero: int, mode: String, difficulty: int, stage_index: int) -> 
     text("Measured strikes. Reliable damage.\nA versatile first choice.",Rect2(824,204,268,65),14,MUTED)
     text("NYRA  /  AGILE",Rect2(824,302,270,28),16,VIOLET)
     text("Faster movement and recovery.\nLighter hits reward pressure.",Rect2(824,343,268,65),14,MUTED)
+    if mode == "versus":
+        for child: Node in menu.get_children():
+            if child is Label and child.position.x == 824: child.hide()
+        text("PLAYER 2",Rect2(824,163,270,28),18,VIOLET)
+        button("KAEL" + ("  ✓" if second_hero == 0 else ""),Rect2(824,220,248,44),"hero2",null,second_hero == 0,0)
+        button("NYRA" + ("  ✓" if second_hero == 1 else ""),Rect2(824,278,248,44),"hero2",null,second_hero == 1,1)
+        text("P1: A / D / W + J K L
+P2: arrows + , . /
+Enter dodge · ; bolt · ' break
+Or two connected gamepads.",Rect2(824,347,270,120),13,MUTED)
     text("DIFFICULTY",Rect2(82,493,180,25),11,MUTED)
     var diff := OptionButton.new()
     diff.position = Vector2(82,524)
     diff.size = Vector2(240,38)
     for item: String in ["APPRENTICE","DUELIST","MASTER"]: diff.add_item(item)
     diff.select(difficulty)
+    diff.disabled = mode == "versus"
     menu.add_child(diff)
     diff.item_selected.connect(func(index: int) -> void: action_requested.emit("difficulty",index))
-    text("ATMOSPHERE",Rect2(350,493,220,25),11,MUTED)
+    text("ARENA",Rect2(350,493,220,25),11,MUTED)
     var stages := OptionButton.new()
     stages.position = Vector2(350,524)
     stages.size = Vector2(240,38)
-    for item: String in ["MOONFALL","EMBER DAWN","ECLIPSE"]: stages.add_item(item)
+    for item: String in ["MOONFALL","EMBER DAWN","ECLIPSE CITADEL"]: stages.add_item(item)
     stages.select(stage_index)
     menu.add_child(stages)
     stages.item_selected.connect(func(index: int) -> void: action_requested.emit("stage",index))
@@ -270,7 +283,7 @@ func show_controls() -> void:
     text("Hold %s to guard attacks from the front.\nGuard just before impact to parry and stagger.\n%s dodges in your movement direction, using stamina.\nAn empty guard breaks under pressure." % [InputBootstrap.key_text("block"),InputBootstrap.key_text("dodge")],Rect2(632,156,463,136),15,TEXT)
     text("BREAK THE VEIL",Rect2(632,326,470,26),14,VIOLET)
     text("Dealing and taking damage builds your Veil meter.\nAt 100%%, press %s for a devastating close-range strike.\nBest of three rounds. Win on health when time expires." % InputBootstrap.key_text("veil_break"),Rect2(632,363,465,100),15,TEXT)
-    text("TRAINING  /  T changes dummy behavior · R resets · F3 hitboxes\nDUEL  /  Esc pauses · R restarts · F11 fullscreen",Rect2(74,466,1000,62),13,MUTED)
+    text("LOCAL VERSUS  /  P1 uses primary keys. P2: arrows move/jump, comma light, period heavy, slash guard.\nP2: Enter dodge, semicolon bolt, apostrophe break. Two gamepads: device 1 = P1, device 2 = P2.\nTRAINING  /  T dummy · R reset · F3 hitboxes       SURVIVAL  /  defeat shades, recover 20 health each wave.",Rect2(74,466,1000,84),12,MUTED)
     var back: Button = button("BACK",Rect2(74,574,210,42),"back",null,true)
     back.grab_focus()
 
@@ -303,6 +316,16 @@ func show_result(won: bool, arcade: bool, cleared: bool, score: String, summary:
     else:
         button("REMATCH",Rect2(377,478,398,43),"restart")
     first.grab_focus()
+
+func show_survival_result(waves: int, record: int) -> void:
+    show_result(false,false,false,"%d SHADES DEFEATED" % waves,"Best run: %d shades. Rise again and push further." % record)
+    message_label.text = ""
+
+func show_local_result(left_won: bool, score: String) -> void:
+    show_result(true,false,false,score,"Local versus / career records unaffected")
+    for child: Node in menu.get_children():
+        if child is Label and child.position.y == 90:
+            child.text = "PLAYER %d WINS" % (1 if left_won else 2)
 
 func show_rebind(action: String) -> void:
     box(Rect2(0,0,1152,648),Color(0.02,0.03,0.07,0.96),menu)
@@ -379,6 +402,11 @@ func bind_fighters(new_player: FighterBase, new_enemy: FighterBase) -> void:
     player_lag.value = player.max_health
     enemy_lag.value = enemy.max_health
     combat.show()
+
+func set_arena(index: int) -> void:
+    for child: Node in combat.get_children():
+        if child is Label and child.position == Vector2(863,14):
+            child.text = ["MOONFALL SANCTUARY", "EMBER DAWN", "ECLIPSE CITADEL"][clampi(index,0,2)]
 
 func set_score(left: int, right: int) -> void:
     score_label.text = "%s %s    /    %s %s" % ["●" if left>0 else "○","●" if left>1 else "○","●" if right>0 else "○","●" if right>1 else "○"]

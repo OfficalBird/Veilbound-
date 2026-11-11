@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 — Shades and Rivals
+
+- Added local two-player versus with independent fighter selection, separate keyboard controls, and two gamepad device assignments.
+- Added endless Survival, capped enemy scaling, health recovery between waves, preserved Veil meter, retry flow, and persistent personal records.
+- Added Eclipse Citadel arena artwork and matching HUD arena names.
+- Kept human versus results separate from solo career records.
+- Expanded headless coverage to 52 checks, including physical keyboard input mapping and survival progression.
+- Added continuous integration for Godot import, combat tests, and move-lab tests.
+
 ## 0.2.0 — The Shattered Veil
 
 - Added Kael and Nyra with separate artwork, pose-based animation, and different movement/damage profiles.

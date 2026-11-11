@@ -1,6 +1,6 @@
 # Veilbound — The Shattered Veil
 
-A complete single-player sword-fighting game built in **Godot 4.6**, set in the moonlit ruins of Moonfall Sanctuary. Choose a fighter, break three seals in Arcade, or refine your technique in Training.
+A sword-fighting game built in **Godot 4.6**, set in the moonlit ruins of Moonfall Sanctuary. Choose a fighter, break three seals in Arcade, fight a friend in Local Versus, survive endless shades, or refine your technique in Training.
 
 ![Veilbound combat in Moonfall Sanctuary](docs/images/combat.jpg)
 
@@ -9,7 +9,7 @@ A complete single-player sword-fighting game built in **Godot 4.6**, set in the 
 1. Download this repository with **Code → Download ZIP**, or clone it.
 2. Install **Godot 4.6 or newer** (standard edition; no .NET required).
 3. Import `project.godot` in Godot's Project Manager.
-4. Press **F5** to play. Choose Arcade, Quick Duel, or Training.
+4. Press **F5** to play. Choose Arcade, Quick Duel, Local Versus, Survival, or Training.
 
 The game runs offline on the desktop. No accounts, API keys, asset downloads, or external services are required after opening the project. The source can be exported through Godot for macOS, Windows, or Linux after installing the matching export templates.
 
@@ -18,7 +18,9 @@ The game runs offline on the desktop. No accounts, API keys, asset downloads, or
 - **Two playable fighters:** Kael, a balanced swordsman, and Nyra, a faster duelist with lighter attacks.
 - **Three-seal Arcade:** three increasingly difficult rivals, each fought in a best-of-three match, with an ending and retry flow.
 - **Quick Duel** and **Training**, with idle, guarding, and active rival behavior.
-- **Three difficulty levels** and three atmospheric treatments of Moonfall Sanctuary.
+- **Local Versus:** two independently selected fighters, shared keyboard or two gamepads, best of three.
+- **Survival:** escalating shades, health and Veil carried between waves, 20 health recovered per win, and a saved personal record.
+- **Three difficulty levels**, Moonfall and Ember Dawn atmospheres, and a distinct **Eclipse Citadel** arena.
 - **Eight visual poses per fighter:** ready, walk, windup, slash, recoil, guard, and jump states.
 - **Original arena and fighter artwork**, animated ambient particles, slash trails, sparks, damage numbers, hitstop, camera shake, and impact flashes.
 - **Original synthesized music and effects** for strikes, guards, parries, projectiles, movement, and results.
@@ -28,7 +30,7 @@ The game runs offline on the desktop. No accounts, API keys, asset downloads, or
 - **Complete menus:** title, fighter selection, controls, options, pause, round announcements, results, and credits.
 - **Persistent settings and career records**, key rebinding, gamepad actions, volume sliders, fullscreen, and optional screen shake/flashes.
 
-This release is a local single-player game against AI. Online multiplayer and local two-player versus are outside its current feature set.
+This release supports offline solo play against AI and local two-player versus. Online multiplayer is outside its current feature set.
 
 ## Keyboard controls
 
@@ -52,6 +54,21 @@ Primary bindings can be changed in Options. Fixed menu keys remain reserved. Sel
 
 **Gamepad:** left stick / D-pad to move, A to jump, X light, Y heavy, B dodge, LB guard, RB bolt, right stick click Veil Break, Start pause. Labels use Xbox-style names; equivalent controller buttons follow the same mapping.
 
+## Local Versus and Survival
+
+In Local Versus, the large fighter cards select Player 1; the right-hand buttons select Player 2. Difficulty does not affect either human fighter. Player 1 uses the primary keyboard bindings (A/D/W and J/K/L by default). Arrow-key aliases apply to solo modes only.
+
+| Player 2 action | Key |
+| --- | --- |
+| Move / jump | Left / Right / Up |
+| Light / heavy / guard | Comma / Period / Slash |
+| Dodge | Enter |
+| Veil bolt / Veil Break | Semicolon / Apostrophe |
+
+Alternatively, connect two gamepads before starting: first device controls P1 and second device controls P2. Player 2's keys are reserved when rebinding P1. Keyboard rollover limits vary by hardware; controllers are preferable for simultaneous inputs.
+
+Survival pits you against one shade per wave. Every victory restores 20 health (capped at 100), preserves your Veil meter, and increases rival health, speed, and damage up to fixed caps. A timeout win advances; a draw repeats the same wave without healing. Defeat records the number of completed shades. Retry starts a fresh run. Local Versus and Survival do not alter solo duel win rates.
+
 ## Combat notes
 
 - The first light attack retains **0.08s windup**, **0.10s active time**, and **0.40s attack-start cooldown**.
@@ -74,7 +91,7 @@ godot --headless --path . --editor --import --quit
 godot --headless --path . --script res://tests/combat_test.gd
 ```
 
-The automated suite exercises combat rules, active-window detection, resources, training reset, round and arcade flow, both fighters, pause/resume, and menu construction. The game has also been opened and played in the Godot editor for visual and input checks.
+The automated suite contains 52 checks and exercises combat rules, active-window detection, resources, training reset, round and arcade flow, both fighters, pause/resume, menu construction, local input separation, survival carryover, fresh retries, record handling, and arena selection. The game has also been opened and played in the Godot editor for visual and input checks.
 
 For the lab, run `npm test` from `move-lab/` using Node.js 18 or later. No npm packages are required.
 
