@@ -163,7 +163,7 @@ func show_title() -> void:
     var stats: String = "%d WINS    /    %d DUELS    /    %d ARCADE CLEARS" % [SaveManager.total_match_wins,SaveManager.total_matches_played,SaveManager.arcade_clears]
     text(stats,Rect2(88,528,620,25),12,GOLD)
     text("A / D  MOVE     W  JUMP     J / K  STRIKE     L  GUARD",Rect2(88,573,850,24),12,MUTED)
-    text("v0.3  ·  SHERWIN DHALIWAL",Rect2(88,606,700,20),11,Color("6c839c"))
+    text("v%s  ·  SHERWIN DHALIWAL" % ProjectSettings.get_setting("application/config/version"),Rect2(88,606,700,20),11,Color("6c839c"))
     first.grab_focus()
 
 func show_select(hero: int, mode: String, difficulty: int, stage_index: int, second_hero: int = 1) -> void:

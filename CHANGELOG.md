@@ -1,5 +1,11 @@
 # Changelog
 
+Veilbound uses `MAJOR.MINOR.PATCH` version numbers. Major releases introduce big changes, minor releases add features, and patches fix bugs. Starting at `1.0.0`, the next major would be `2.0.0`, the next minor `1.1.0`, and the next patch `1.0.1`.
+
+## 1.0.0
+
+- First public GitHub release. See the [release notes](docs/releases/v1.0.0.md).
+
 ## 0.3.0 — Shades and Rivals
 
 - Added local two-player versus with independent fighter selection, separate keyboard controls, and two gamepad device assignments.
