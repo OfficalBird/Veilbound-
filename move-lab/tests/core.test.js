@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {seed,duration,repeat,schedule,validateState} from '../dist/core.js';
+const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} != ${b}`);
+test('confirmed light attack timing and repeat readiness',()=>{const m=seed().moves[0];near(m.windup,.08);near(m.active,.10);near(m.cooldown,.4);near(duration(m),.36);near(repeat(m),.4);});
+test('a repeated linked light waits for its own cooldown',()=>{const s=seed(),r=schedule(s.moves,['light','light'],true);near(r.rows[1].start,.4);near(r.total,.76);assert.equal(r.damage,20);assert.equal(r.rows[0].canceled,false);near(r.wait,.04);});
+test('per-move cooldown allows a different linked attack immediately after active',()=>{const s=seed(),r=schedule(s.moves,['light','heavy'],true);near(r.rows[1].start,.18);near(r.total,.74);assert.equal(r.damage,28);assert.equal(r.rows[0].canceled,true);});
+test('disabling links waits for complete recovery',()=>{const s=seed(),r=schedule(s.moves,['light','heavy'],false);near(r.rows[1].start,.36);near(r.total,.92);assert.equal(r.rows[0].canceled,false);});
+test('seed combo damage and schedule update with edited values',()=>{const s=seed(),r=schedule(s.moves,s.combo,true);assert.equal(r.damage,38);near(r.total,1.14);s.moves[0].damage=12;assert.equal(schedule(s.moves,s.combo,true).damage,42);});
+test('cooldown tracks earlier use even after other moves',()=>{const s=seed();s.moves[0].cooldown=2;s.moves[1].links=['light'];const r=schedule(s.moves,['light','heavy','light'],true);near(r.rows[2].start,2);near(r.total,2.36);});
+test('empty and zero-duration combos stay finite',()=>{assert.equal(schedule([],[]).total,0);const s=seed();for(const k of ['windup','active','recovery','cooldown'])s.moves[0][k]=0;assert.equal(schedule(s.moves,['light']).dps,0);});
+test('JSON validation rejects invalid or unsafe data and removes dangling links',()=>{const s=seed();assert.deepEqual(validateState(s),s);s.moves[0].links.push('missing');assert.equal(validateState(s).moves[0].links.includes('missing'),false);s.moves[0].damage=-1;assert.throws(()=>validateState(s));s.moves[0].damage=10;s.moves[0].windup=Infinity;assert.throws(()=>validateState(s));assert.throws(()=>validateState({...seed(),combo:['missing']}));});

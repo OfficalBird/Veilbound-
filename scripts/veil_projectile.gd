@@ -1,47 +1,30 @@
-extends Area2D
+extends Node2D
 
-@export var speed := 520.0
-@export var lifetime := 1.8
-
-var direction := 1.0
-var owner_fighter: Node
-var attack_data := {
-    "damage": 12,
-    "knockback": 240.0,
-    "hitstun": 0.20,
-    "guard_damage": 16.0,
-    "blockable": true
-}
-
-
-func _ready() -> void:
-    body_entered.connect(_on_body_entered)
-
-
-func setup(new_direction: float, new_owner: Node, tint: Color = Color.WHITE) -> void:
-    direction = signf(new_direction)
-    owner_fighter = new_owner
-    $Visual.modulate = tint
-    $Visual.scale.x = direction
-
-    if is_instance_valid(owner_fighter) and owner_fighter is CollisionObject2D:
-        var owner_collision := owner_fighter as CollisionObject2D
-        collision_mask = 2 if owner_collision.collision_layer == 1 else 1
-    else:
-        collision_mask = 3
-
+var direction: float = 1.0
+var owner_fighter: FighterBase
+var target: FighterBase
+var tint: Color = Color.CYAN
+var age: float = 0.0
+var trail: Array[Vector2] = []
+var attack_data: Dictionary = {}
 
 func _physics_process(delta: float) -> void:
-    global_position.x += speed * direction * delta
-    lifetime -= delta
-    if lifetime <= 0.0:
+    age += delta
+    position.x += direction * 560.0 * delta
+    trail.push_front(position)
+    if trail.size() > 8: trail.pop_back()
+    if is_instance_valid(target) and Rect2(position - Vector2(18, 15), Vector2(36, 30)).intersects(target.get_hurt_rect()):
+        target.receive_attack(attack_data, owner_fighter)
         queue_free()
-
-
-func _on_body_entered(body: Node) -> void:
-    if body == owner_fighter:
-        return
-
-    if body.has_method("receive_attack"):
-        body.receive_attack(attack_data, owner_fighter)
+    if age > 2.0 or position.x < -60.0 or position.x > 1212.0:
         queue_free()
+    queue_redraw()
+
+func _draw() -> void:
+    for i: int in range(trail.size()):
+        var color: Color = tint
+        color.a = (1.0-float(i)/8.0)*0.3
+        draw_circle(trail[i] - position, 11.0-float(i), color)
+    draw_circle(Vector2.ZERO, 15, Color(tint, 0.15))
+    draw_colored_polygon(PackedVector2Array([Vector2(-24*direction,0),Vector2(0,-10),Vector2(22*direction,0),Vector2(0,10)]), tint)
+    draw_line(Vector2(-10*direction,0),Vector2(15*direction,0),Color.WHITE,3)

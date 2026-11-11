@@ -1,43 +1,48 @@
-# Manual Test Plan
+# Test plan
 
-Use this list after gameplay changes.
+Run the headless checks documented in the README before gameplay changes. The following manual checks cover presentation, physical input, and release behavior that automated rules tests cannot fully assess.
 
-## Movement
-- Player moves left/right and cannot pass arena walls.
-- Jump works from the floor.
-- Jump input shortly before landing is buffered.
-- Walking off a ledge still allows a brief coyote-time jump.
+## Menu and presentation
+
+- Title, fighter selection, controls, credits, and Options open without errors.
+- Both portraits fit their cards, including at a reduced window size.
+- Both fighters render eight appropriate poses with no atlas bleed.
+- Both difficulty and atmosphere selections persist through match startup.
+- UI text, health, stamina, Veil, timer, and round markers remain readable.
+- Music loops; audio sliders, mute, shake, and flash settings take effect.
 
 ## Combat
-- Light attack cycles through three combo steps when timed within the combo window.
-- Heavy attack consumes stamina and cannot be used without enough stamina.
-- Melee attacks do not damage their owner.
-- A single melee swing cannot damage the same target multiple times.
-- Knockback pushes away from the attacker.
 
-## Defense
-- Holding block reduces incoming damage.
-- Blocking consumes stamina when hit.
-- Pressing block just before impact can parry.
-- Parried attacker enters hitstun.
-- Dodge consumes stamina and ignores attacks during the invulnerability window.
-
-## Projectile
-- Player projectile damages enemy but not player.
-- Enemy projectile damages player but not enemy.
-- Projectile expires after its lifetime.
-
-## AI
-- Enemy approaches at long range.
-- Enemy can retreat at very close range.
-- Enemy attacks in range.
-- Enemy sometimes blocks when the player attacks.
-- Training toggle disables AI movement/attacks.
+- Movement stops at arena boundaries; jumping, coyote time, and jump buffering work.
+- A late overlap during an active attack can hit, and a swing cannot hit the same target twice.
+- Cooldowns, stamina costs, light chaining, and buffered inputs are enforced.
+- Front guard applies chip and stamina damage; rear attacks bypass guard.
+- A well-timed parry prevents damage and staggers the attacker.
+- Exhausted guard breaks; dodge immunity ends after its active window.
+- Both sides' projectiles use the same defense rules and expire outside the arena.
+- Full Veil enables Veil Break and is consumed by the attack.
 
 ## Match flow
-- Defeating a fighter ends the round.
-- Timeout awards the round to the fighter with higher health percentage.
-- Best-of-three match ends at two round wins.
-- R restarts the match.
-- Esc pauses and resumes gameplay.
-- Match statistics persist after restarting the application.
+
+- Inputs and damage are locked during round introductions and after K.O.
+- Two round wins end a match; timeout uses health ratios; a tie replays the round.
+- Arcade progresses through all three rivals and reaches its ending.
+- Defeat offers retry; results, pause, and restart can return to the title.
+- Training can cycle idle, guard, and active behavior, reset, and recover after defeat.
+- Career results are recorded once; settings and records survive restart.
+
+## Input and platforms
+
+- Primary keyboard rebinding and duplicate-key swapping work.
+- Esc, R, T, F3, and F11 retain their documented functions.
+- A gamepad can navigate menus and perform each combat action.
+- Exported builds should be checked on each target OS before distributing them as tested binaries.
+
+## Checks completed for 0.2
+
+- Godot 4.6.3 headless import and startup.
+- 36 automated combat, state, and menu checks.
+- Browser lab: eight calculation and validation tests, plus interaction checks.
+- Native editor visual checks of title, selection, and combat, with keyboard movement and attacks.
+
+Gamepad hardware and macOS/Windows exported binaries require target-device testing.

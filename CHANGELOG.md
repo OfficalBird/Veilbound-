@@ -1,27 +1,19 @@
 # Changelog
 
-## 0.2.0 - Combat Systems Expansion
+## 0.2.0 — The Shattered Veil
 
-- Reworked fighters around a shared `FighterBase` combat layer.
-- Added stamina and regeneration.
-- Added three-step light combo.
-- Added heavy attacks.
-- Added blocking, parry timing, guard damage, and guard breaks.
-- Added dodge movement with invulnerability.
-- Added hitstun and directional knockback.
-- Added Veil Burst projectile system.
-- Replaced simple chase AI with a combat state machine.
-- Added round timer, score, best-of-three match flow, pause, and rematch.
-- Added training mode and debug overlay.
-- Added persistent match/win counters.
-- Expanded HUD with health/stamina, timer, score, combo, and status labels.
-- Added architecture, design, roadmap, and test documentation.
+- Added Kael and Nyra with separate artwork, pose-based animation, and different movement/damage profiles.
+- Added the Moonfall Sanctuary arena, three atmosphere options, ambient particles, slash trails, sparks, and damage numbers.
+- Added original synthesized music and sound effects.
+- Added title, fighter selection, controls, Options, pause, results, and credits screens.
+- Added a complete three-rival Arcade ladder, Quick Duel, and Training dummy behaviors.
+- Rebuilt shared combat around physics-ticked windup, active, and recovery phases.
+- Fixed late active-window hit detection and prevented repeated damage per swing.
+- Added buffered light chains, attack-start cooldowns, directional guard, timed parries, guard breaks, dodge immunity, and full-meter Veil Break.
+- Locked combat during introductions and round results; removed delayed attack transitions across resets.
+- Added keyboard rebinding, gamepad actions, persistent audio/accessibility settings, and career records.
+- Included the browser move lab, documentation, and automated tests.
 
-## 0.1.0 - First Playable Prototype
+## 0.1.0 — Initial combat systems
 
-- Basic player movement and jump.
-- Directional hitbox.
-- Light attack and damage.
-- Enemy chase/attack behavior.
-- Health bars.
-- Four-frame pixel-art idle animation.
+Movement, melee, basic AI, defense, projectiles, rounds, HUD, and persistent match statistics.

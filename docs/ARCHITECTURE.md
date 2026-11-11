@@ -1,69 +1,23 @@
-# Veilbound Architecture
+# Architecture
 
-## Design goals
+Veilbound uses a command-driven combat layer. `FighterBase` owns movement, hurt rectangles, attack phases, cooldowns, guard, parry, stamina, Veil, animation, and defeat. Player and enemy scripts supply the same command dictionary. This keeps defensive and damage rules consistent across both fighters.
 
-The prototype separates **match flow**, **fighter rules**, **player input**, **enemy decision-making**, and **UI** so each can evolve without turning `player.gd` into a monolithic script.
+## Deterministic attack lifecycle
 
-## FighterBase
+Each physics tick updates windup, active time, and recovery. Cooldowns are measured from attack start. During the entire active phase, the hit rectangle is checked against the opponent's hurt rectangle. A per-swing target list prevents repeated damage. Hits, parries, reset, and round end cancel attacks synchronously, so no delayed attack timers can fire during a new round.
 
-`fighter_base.gd` owns rules shared by every combatant:
+Light inputs have a short buffer and a three-step chain. Recovery cancellation is allowed only for another light within the chain, after its cooldown is ready. Move dictionaries live in `moves.gd`; fighter profiles adjust speed and damage.
 
-- health and defeat state
-- stamina and regeneration
-- blocking and chip damage
-- parry windows
-- guard damage / guard break
-- knockback and hitstun
-- reusable combat signals
-- round reset behavior
+## Match and menu states
 
-Attacks are passed as dictionaries. This keeps damage, windup, active time, recovery, knockback, hitstun, and guard pressure configurable without creating a separate function for every move.
+`game.gd` moves through menu, selection, countdown, fight, round-end, and result states. Both fighters reject damage and input during countdowns and results. Arcade advances through three rivals. Training handles defeats by restoring both fighters instead of recording match results.
 
-## Player
+The game root and HUD process while the scene tree is paused. The arena is explicitly pausable. Hitstop temporarily disables the arena while the game root tracks its expiry; menus and HUD remain independent. Screen shake affects the arena and backdrop without shifting the HUD.
 
-`player.gd` adds input-specific behavior:
+## Presentation and persistence
 
-- acceleration and air control
-- jump buffer + coyote time
-- facing direction
-- light combo sequencing
-- heavy attack stamina spending
-- dodge invulnerability
-- block/parry input
-- ranged Veil Burst
-- attack cancellation when interrupted
+`stage.gd` draws the backdrop, motes, impacts, and damage numbers. Each fighter chooses a pose from its 4×2 sprite atlas and draws guard arcs and attack trails. `audio_manager.gd` builds short sound effects and a looping original composition at startup. No external audio or runtime network service is required.
 
-## Enemy AI
+`save_manager.gd` uses a version-compatible ConfigFile in Godot's `user://` location. It stores career statistics, accessibility options, audio levels, difficulty, and primary bindings. The font license is retained under `art/fonts/`.
 
-`enemy.gd` uses an explicit state enum. It makes short-interval decisions based on distance, player attack state, stamina, and randomness. The intent is to make the enemy readable rather than perfectly optimal.
-
-## Match controller
-
-`game.gd` owns the match instead of either fighter:
-
-- round timer
-- score
-- best-of-three logic
-- timeout decisions
-- resets
-- pause
-- training toggle
-- debug overlay data
-- persistent win recording
-
-## HUD
-
-`hud.gd` listens to fighter signals. Fighters do not directly reach into UI nodes to change bars, keeping combat code independent from layout.
-
-## Persistence
-
-`save_manager.gd` stores simple career counters with Godot `ConfigFile` in `user://veilbound_save.cfg`.
-
-## Collision layers
-
-- Layer 1: Player body
-- Layer 2: Enemy body
-- Layer 4: World / arena
-- Layer 8: Projectile areas
-
-Player melee hitboxes only scan the enemy layer and enemy hitboxes only scan the player layer. Projectiles set their target mask dynamically based on their owner.
+The browser move lab is separate tooling. `.gdignore` excludes it from Godot's resource scanner.
