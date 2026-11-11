@@ -342,7 +342,7 @@ func _on_combat_event(kind: String, source: Node, target: Node, amount: int) -> 
     if kind in ["hit","block","parry","guard_break"]:
         var point: Vector2 = target_fighter.position + Vector2(0,-72) if target_fighter != null else source_fighter.position+Vector2(0,-72)
         var color: Color = Color("f6deaa") if kind=="parry" else Color("b5eefa") if kind=="block" else source_fighter.accent if source_fighter != null else Color.WHITE
-        stage.add_impact(point,color,kind,amount)
+        stage.add_impact(point + world.position - stage.position,color,kind,amount)
         hitstop = 0.035 if kind=="block" else 0.065 if kind=="hit" else 0.1
         world.process_mode = Node.PROCESS_MODE_DISABLED
         shake = maxf(shake,2.0 if kind=="block" else 5.0 if kind=="hit" else 9.0)
@@ -360,8 +360,10 @@ func _on_combat_event(kind: String, source: Node, target: Node, amount: int) -> 
             match_best_combo = maxi(match_best_combo,combo_hits)
             hud.show_combo(combo_hits,combo_damage)
     elif kind in ["land","jump","dodge"] and source_fighter != null:
-        stage.add_impact(source_fighter.position,source_fighter.accent,kind)
+        stage.add_impact(source_fighter.position + world.position - stage.position,source_fighter.accent,kind)
     elif kind=="burst":
+        if source_fighter != null:
+            stage.add_impact(source_fighter.position + Vector2(0, -72) + world.position - stage.position,source_fighter.accent,kind)
         hud.announce("VEIL BREAK")
         flash_life = 0.14
         shake = 8.0

@@ -48,6 +48,12 @@ var cooldowns: Dictionary = {"light":0.0,"heavy":0.0,"special":0.0,"burst":0.0}
 var hit_targets: Array[Node] = []
 var flash_remaining: float = 0.0
 var age: float = 0.0
+var stride: float = 0.0
+var landing_pose: float = 0.0
+var fall_pose: float = 0.0
+var sprite_scale: float = 1.0
+var ghost_clock: float = 0.0
+var ghosts: Array[Dictionary] = []
 var landing_was_airborne: bool = false
 var debug_hitboxes: bool = false
 var sprite: Sprite2D
@@ -66,7 +72,8 @@ func _ready() -> void:
     sprite.hframes = 4
     sprite.vframes = 2
     var cell_height: float = float(sprite.texture.get_height()) / 2.0
-    sprite.scale = Vector2.ONE * (200.0 / cell_height)
+    sprite_scale = 200.0 / cell_height
+    sprite.scale = Vector2.ONE * sprite_scale
     sprite.position = Vector2(0, -84 if fighter_id == "kael" else -88)
     add_child(sprite)
     if fighter_id == "nyra":
@@ -80,6 +87,12 @@ func _read_commands(_delta: float) -> Dictionary:
 
 func _physics_process(delta: float) -> void:
     age += delta
+    landing_pose = maxf(0.0, landing_pose - delta)
+    if is_defeated: fall_pose = minf(1.0, fall_pose + delta / 0.34)
+    for ghost: Dictionary in ghosts:
+        ghost.life -= delta
+    while not ghosts.is_empty() and float(ghosts.front().life) <= 0.0:
+        ghosts.pop_front()
     hitstun_remaining = maxf(0.0, hitstun_remaining - delta)
     parry_remaining = maxf(0.0, parry_remaining - delta)
     dodge_cooldown = maxf(0.0, dodge_cooldown - delta)
@@ -100,6 +113,7 @@ func _physics_process(delta: float) -> void:
     else:
         coyote = 0.10
         if landing_was_airborne:
+            landing_pose = 0.16
             combat_event.emit("land", self, null, 0)
             landing_was_airborne = false
     jump_buffer = maxf(0.0, jump_buffer - delta)
@@ -112,7 +126,7 @@ func _physics_process(delta: float) -> void:
     if is_defeated or not combat_enabled:
         velocity.x = move_toward(velocity.x, 0.0, 1800.0 * delta)
         move_and_slide()
-        _update_visuals()
+        _update_visuals(delta)
         return
     var commands: Dictionary = _read_commands(delta)
     var direction: float = float(commands.get("move", 0.0))
@@ -157,8 +171,15 @@ func _physics_process(delta: float) -> void:
     _tick_attack(delta)
     move_and_slide()
     position.x = clampf(position.x, 40.0, 1112.0)
-    _update_visuals()
-    queue_redraw()
+    _update_visuals(delta)
+    if dodge_remaining > 0.0:
+        ghost_clock -= delta
+        if ghost_clock <= 0.0:
+            ghost_clock = 0.045
+            ghosts.append({"position": position + sprite.position, "frame": sprite.frame,
+                "flip": sprite.flip_h, "life": 0.19})
+    else:
+        ghost_clock = 0.0
 
 func _start_attack(kind: String) -> bool:
     if not combat_enabled or is_defeated or hitstun_remaining > 0.0 or blocking or dodge_remaining > 0.0 or float(cooldowns.get(kind, 0.0)) > 0.0:
@@ -310,6 +331,11 @@ func reset_fighter(spawn: Vector2) -> void:
     dodge_remaining = 0.0
     dodge_cooldown = 0.0
     flash_remaining = 0.0
+    stride = 0.0
+    landing_pose = 0.0
+    fall_pose = 0.0
+    ghosts.clear()
+    ghost_clock = 0.0
     input_buffer = ""
     combo_window = 0.0
     combo_step = 0
@@ -334,67 +360,140 @@ func get_state_name() -> String:
     if not is_on_floor(): return "AIR"
     return "MOVE" if absf(velocity.x) > 10.0 else "IDLE"
 
-func _update_visuals() -> void:
+func _attack_progress() -> float:
+    var duration: float = float(current_attack.get(attack_phase, 0.1))
+    return clampf(1.0 - phase_remaining / maxf(duration, 0.001), 0.0, 1.0)
+
+func _update_visuals(delta: float) -> void:
     if not is_instance_valid(sprite): return
+    var height: float = 84.0 if fighter_id == "kael" else 88.0
+    var stretch := Vector2.ONE
+    var offset := Vector2.ZERO
+    var tilt := 0.0
+    var frame_index := 0
     sprite.flip_h = facing < 0.0
     sprite.modulate = costume_tint
-    sprite.position.y = -84.0 if fighter_id == "kael" else -88.0
-    sprite.rotation = 0.0
-    var frame_index: int = 0
     if is_defeated:
         frame_index = 5
-        sprite.rotation = -facing * 0.75
-        sprite.position.y = -48.0
-        sprite.modulate = Color(0.6, 0.6, 0.7, 0.75)
+        var fall: float = smoothstep(0.0, 1.0, fall_pose)
+        tilt = -facing * fall * 1.15
+        offset = Vector2(-facing * 22.0, 38.0) * fall
+        sprite.modulate = costume_tint.lerp(Color(0.55, 0.56, 0.67, 0.78), fall)
     elif hitstun_remaining > 0.0:
         frame_index = 5
+        var recoil: float = clampf(hitstun_remaining * 3.0, 0.0, 1.0)
+        tilt = -facing * 0.17 * recoil
+        stretch = Vector2(1.0 + 0.07 * recoil, 1.0 - 0.09 * recoil)
     elif dodge_remaining > 0.0:
         frame_index = 7
-        sprite.modulate.a = 0.48
-        sprite.rotation = facing * 0.16
+        var tuck: float = sin(PI * clampf(dodge_remaining / 0.18, 0.0, 1.0))
+        tilt = dodge_direction * 0.28 * tuck
+        stretch = Vector2(1.10, 1.0 - 0.21 * tuck)
+        sprite.modulate.a = 0.78
     elif blocking:
         frame_index = 6
+        tilt = -facing * (0.09 if parry_remaining > 0.0 else 0.02)
+        stretch.y = 0.97
     elif is_attacking:
-        frame_index = 3 if attack_phase == "windup" else 4
-        sprite.position.x = facing * (9.0 if attack_phase == "active" else 0.0)
+        var progress: float = _attack_progress()
+        var kind: String = str(current_attack["kind"])
+        var power: float = 1.35 if kind in ["heavy", "burst"] else 1.0
+        match attack_phase:
+            "windup":
+                frame_index = 3
+                offset.x = -facing * 9.0 * power * progress
+                tilt = -facing * 0.14 * power * progress
+                stretch.y = 1.0 - 0.08 * progress
+            "active":
+                frame_index = 4
+                var follow: float = 1.0 - progress * 0.55
+                offset.x = facing * 15.0 * power * follow
+                tilt = facing * 0.15 * power * follow
+                stretch = Vector2(1.0 + 0.08 * follow, 1.0 - 0.05 * follow)
+            "recovery":
+                frame_index = 4 if progress < 0.48 else 0
+                offset.x = facing * 7.0 * (1.0 - progress)
+                tilt = facing * 0.08 * (1.0 - progress)
     elif not is_on_floor():
         frame_index = 7
+        var rise: float = clampf(-velocity.y / 600.0, -1.0, 1.0)
+        stretch = Vector2(1.0 - 0.06 * rise, 1.0 + 0.10 * rise)
+        tilt = velocity.x / maxf(move_speed, 1.0) * 0.10
     elif absf(velocity.x) > 15.0:
-        frame_index = 1 + int(age * 10.0) % 2
-        sprite.position.y += sin(age * 20.0) * 1.5
+        stride = fposmod(stride + absf(velocity.x) * delta / 60.0, 1.0)
+        frame_index = 1 if stride < 0.5 else 2
+        offset.y = -absf(sin(stride * TAU)) * 4.0
+        tilt = velocity.x / maxf(move_speed, 1.0) * 0.07
     else:
-        sprite.position.y += sin(age * 3.5) * 1.0
-    if not is_attacking: sprite.position.x = 0.0
+        stretch.y += sin(age * 3.8) * 0.018
+    if is_on_floor() and not is_defeated:
+        stretch.y -= landing_pose / 0.16 * 0.13
+        stretch.x += landing_pose / 0.16 * 0.08
     sprite.frame = frame_index
-    if flash_remaining > 0.0:
-        sprite.modulate = Color(1.8, 1.8, 1.8)
+    sprite.scale = stretch * sprite_scale
+    sprite.rotation = tilt
+    sprite.position = Vector2(0.0, -height * stretch.y) + offset
+    if flash_remaining > 0.0 and bool(SaveManager.settings["flashes"]):
+        sprite.modulate = sprite.modulate.lerp(Color(1.65, 1.65, 1.65), flash_remaining * 8.0)
     queue_redraw()
 
 func _draw() -> void:
     draw_ellipse_shadow()
+    for ghost: Dictionary in ghosts:
+        var cell := Vector2(floorf(sprite.texture.get_width() / 4.0), floorf(sprite.texture.get_height() / 2.0))
+        var frame: int = ghost.frame
+        var origin := Vector2(frame % 4, floori(frame / 4.0)) * cell
+        var size: Vector2 = cell * sprite_scale
+        var center: Vector2 = ghost.position - position
+        draw_set_transform(center, 0.0, Vector2(-1.0 if ghost.flip else 1.0, 1.0))
+        draw_texture_rect_region(sprite.texture, Rect2(-size * 0.5, size),
+            Rect2(origin, cell), Color(accent, float(ghost.life) * 2.3))
+    draw_set_transform(Vector2.ZERO)
     if blocking:
-        var guard_color: Color = accent
-        guard_color.a = 0.7 if parry_remaining > 0.0 else 0.25
-        draw_arc(Vector2(12 * facing, -65), 63, -1.3 if facing > 0 else 1.85, 1.3 if facing > 0 else 4.45, 28, guard_color, 3.0)
-    if attack_phase == "active" and str(current_attack.get("kind", "")) != "special":
-        var reach: float = float(current_attack.get("reach", 116.0))
-        var points := PackedVector2Array()
-        for i: int in range(12):
-            var angle: float = -1.15 + float(i) / 11.0 * 2.2
-            points.append(Vector2(cos(angle) * reach * facing, -67 + sin(angle) * 64))
-        for i: int in range(11, -1, -1):
-            var angle: float = -1.15 + float(i) / 11.0 * 2.2
-            points.append(Vector2(cos(angle) * reach * 0.78 * facing, -67 + sin(angle) * 45))
-        var slash: Color = accent
-        slash.a = 0.62
-        draw_colored_polygon(points, slash)
-        draw_polyline(points.slice(0, 12), Color(0.95, 1.0, 1.0, 0.85), 2.0, true)
+        var parrying: bool = parry_remaining > 0.0
+        var start: float = -1.3 if facing > 0.0 else 1.85
+        var center := Vector2(12.0 * facing, -65.0)
+        draw_arc(center, 63.0, start, start + 2.6, 28, Color(accent, 0.16), 9.0, true)
+        draw_arc(center, 63.0, start, start + 2.6, 28, Color(accent, 0.85 if parrying else 0.40), 2.0, true)
+    if is_attacking:
+        _draw_attack()
     if debug_hitboxes:
         draw_rect(Rect2(Vector2(-23, -116), Vector2(46, 116)), Color(0.3, 1, 0.5, 0.5), false)
         if attack_phase == "active": draw_rect(Rect2(get_attack_rect().position - position, get_attack_rect().size), Color(1, 0.3, 0.3, 0.6), false)
 
+func _draw_attack() -> void:
+    var kind: String = current_attack["kind"]
+    var progress: float = _attack_progress()
+    if attack_phase == "windup" and kind in ["heavy", "special", "burst"]:
+        var point := Vector2(facing * 46.0, -77.0)
+        draw_circle(point, 8.0 + progress * 20.0, Color(accent, progress * 0.14))
+        draw_arc(point, 10.0 + progress * 12.0, age * 5.0, age * 5.0 + PI * 1.6,
+            26, Color(accent, progress * 0.68), 2.0, true)
+    if attack_phase != "active" or kind == "special": return
+    var reach: float = current_attack["reach"]
+    var upward: bool = kind == "light" and combo_step == 2
+    var sweep: float = lerpf(-0.45, 1.15, progress)
+    var alpha: float = 1.0 - progress * 0.8
+    var outer := PackedVector2Array()
+    var ribbon := PackedVector2Array()
+    for i: int in range(17):
+        var fraction: float = i / 16.0
+        var angle: float = sweep - (0.85 + progress * 0.70) * (1.0 - fraction)
+        var height: float = sin(angle) * 61.0 * (-1.0 if upward else 1.0)
+        outer.append(Vector2(cos(angle) * reach * facing, -67.0 + height))
+    ribbon.append_array(outer)
+    for i: int in range(16, -1, -1):
+        var point: Vector2 = outer[i]
+        var taper: float = 0.10 + sin(PI * i / 16.0) * 0.18
+        ribbon.append(point.lerp(Vector2(0.0, -67.0), taper))
+    draw_colored_polygon(ribbon, Color(accent, alpha * 0.45))
+    draw_polyline(outer, Color(accent, alpha * 0.22), 9.0, true)
+    draw_polyline(outer, Color(Color.WHITE.lerp(accent, 0.25), alpha), 2.5, true)
+
 func draw_ellipse_shadow() -> void:
-    var points := PackedVector2Array()
-    for i: int in range(24):
-        points.append(Vector2(cos(float(i)/24.0*TAU)*35, sin(float(i)/24.0*TAU)*7))
-    draw_colored_polygon(points, Color(0.02, 0.02, 0.05, 0.48))
+    var lift: float = clampf((550.0 - position.y) / 220.0, 0.0, 1.0)
+    var floor_offset := Vector2(0.0, maxf(0.0, 550.0 - position.y))
+    draw_set_transform(floor_offset, 0.0, Vector2(1.0 - lift * 0.32, 0.23))
+    draw_circle(Vector2.ZERO, 39.0, Color(0.02, 0.02, 0.05, 0.18 - lift * 0.10))
+    draw_circle(Vector2.ZERO, 28.0, Color(0.02, 0.02, 0.05, 0.32 - lift * 0.21))
+    draw_set_transform(Vector2.ZERO)

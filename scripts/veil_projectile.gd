@@ -22,9 +22,19 @@ func _physics_process(delta: float) -> void:
 
 func _draw() -> void:
     for i: int in range(trail.size()):
-        var color: Color = tint
-        color.a = (1.0-float(i)/8.0)*0.3
-        draw_circle(trail[i] - position, 11.0-float(i), color)
-    draw_circle(Vector2.ZERO, 15, Color(tint, 0.15))
-    draw_colored_polygon(PackedVector2Array([Vector2(-24*direction,0),Vector2(0,-10),Vector2(22*direction,0),Vector2(0,10)]), tint)
-    draw_line(Vector2(-10*direction,0),Vector2(15*direction,0),Color.WHITE,3)
+        var fade: float = 1.0 - float(i) / 8.0
+        var point: Vector2 = trail[i] - position
+        draw_circle(point, 14.0 * fade, Color(tint, fade * 0.14))
+        draw_circle(point, 6.0 * fade, Color(tint, fade * 0.44))
+        var spiral: float = sin(age * 32.0 - i * 0.9)
+        draw_circle(point + Vector2(0, spiral * 15.0 * fade), 2.0, Color(tint, fade * 0.70))
+    draw_circle(Vector2.ZERO, 19.0, Color(tint, 0.19))
+    var blade := PackedVector2Array([
+        Vector2(-28.0 * direction, 0.0),
+        Vector2(-6.0 * direction, -8.0),
+        Vector2(22.0 * direction, 0.0),
+        Vector2(-6.0 * direction, 8.0),
+    ])
+    draw_colored_polygon(blade, tint)
+    draw_line(Vector2(-14.0 * direction, 0.0), Vector2(17.0 * direction, 0.0),
+        Color.WHITE.lerp(tint, 0.2), 3.0, true)
